@@ -86,7 +86,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Custom USER model
 
-# AUTH_USER_MODEL = 'reviews.User'
+AUTH_USER_MODEL = 'reviews.User'
 
 
 # Internationalization
