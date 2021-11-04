@@ -5,7 +5,6 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator
 from django.db import models
 
-
 ROLES = (
     ('ADMIN', 'Admin'),
     ('MODERATOR', 'Moderator'),
@@ -19,6 +18,9 @@ class User(AbstractUser):
         'User role', choices=ROLES, default='User', max_length=10)
     confirmation_code: str = models.CharField(
         max_length=12, default=uuid.uuid4)
+    
+    def __str__(self) -> str:
+        return self.username
 
 
 class Review(models.Model):
@@ -39,20 +41,40 @@ class Title(models.Model):
         'Год выхода', validators=[MaxValueValidator(dt.now().year)],
         blank=False,)
     description = models.TextField('Описание', blank=True)
-    genre = models.ForeignKey('Genre', blank=False, on_delete=models.SET_NULL)
-    category = models.ForeignKey('Category', blank=False, on_delete=models.SET_NULL)
+    genre = models.ForeignKey('Genre', blank=False, null=True, on_delete=models.SET_NULL)
+    category = models.ForeignKey(
+        'Category', blank=False, null=True, on_delete=models.SET_NULL)
 
     def __str__(self) -> str:
         return self.name
 
 
 class Comment(models.Model):
-    pass
+    review = models.ForeignKey(
+        Review, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='comments')
+    text = models.TextField('Отзыв о произведении')
+    pub_date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ('-pub_date',)
+
+    def __str__(self) -> str:
+        return self.text[:30]
 
 
 class Genre(models.Model):
-    pass
+    name = models.CharField('Жанр', max_length=150, unique=True)
+    slug = models.SlugField(unique=True, blank=False)
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class Category(models.Model):
-    pass
+    name = models.CharField('Категория', max_length=150, unique=True)
+    slug = models.SlugField(unique=True, blank=False)
+
+    def __str__(self) -> str:
+        return self.name
