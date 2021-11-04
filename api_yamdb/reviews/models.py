@@ -41,7 +41,7 @@ class Title(models.Model):
         'Год выхода', validators=[MaxValueValidator(dt.now().year)],
         blank=False,)
     description = models.TextField('Описание', blank=True)
-    genre = models.ForeignKey('Genre', blank=False, null=True, on_delete=models.SET_NULL)
+    genre = models.ManyToManyField('Genre', through='GenreTitle')
     category = models.ForeignKey(
         'Category', blank=False, null=True, on_delete=models.SET_NULL)
 
@@ -78,3 +78,8 @@ class Category(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+
+class GenreTitle(models.Model):
+    genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
+    title = models.ForeignKey(Title, on_delete=models.CASCADE)
