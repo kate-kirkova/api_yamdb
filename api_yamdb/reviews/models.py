@@ -18,7 +18,7 @@ class User(AbstractUser):
         'User role', choices=ROLES, default='User', max_length=10)
     confirmation_code: str = models.CharField(
         max_length=12, default=uuid.uuid4)
-    
+
     def __str__(self) -> str:
         return self.username
 
@@ -35,13 +35,13 @@ class Review(models.Model):
 
 
 class Title(models.Model):
-    name = models.CharField('Название', max_length=150,
-                            blank=False, unique=True)
+    name = models.CharField('Название', max_length=150, blank=False)
     year = models.PositiveIntegerField(
         'Год выхода', validators=[MaxValueValidator(dt.now().year)],
         blank=False,)
     description = models.TextField('Описание', blank=True)
-    genre = models.ManyToManyField('Genre', through='GenreTitle')
+    genre = models.ManyToManyField(
+        'Genre', blank=False)
     category = models.ForeignKey(
         'Category', blank=False, null=True, on_delete=models.SET_NULL)
 
@@ -80,6 +80,6 @@ class Category(models.Model):
         return self.name
 
 
-class GenreTitle(models.Model):
-    genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
-    title = models.ForeignKey(Title, on_delete=models.CASCADE)
+# class GenreTitle(models.Model):
+#     genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
+#     title = models.ForeignKey(Title, on_delete=models.CASCADE)
