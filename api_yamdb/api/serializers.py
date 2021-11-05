@@ -1,7 +1,20 @@
 from rest_framework import serializers
+from reviews.models import Category, Genre, Title, User
 
-from reviews.models import Title, Category, Genre
 
+class CreateUserSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(required=True)
+
+    def create(self, validated_data):
+        user = User.objects.create_user(
+            email=validated_data['email'],
+            username=validated_data['username'],
+        )
+        return user
+
+    class Meta:
+        model = User
+        fields = ('email', 'username')
 
 class TitleSerializer(serializers.ModelSerializer):
     category = serializers.SlugRelatedField(
