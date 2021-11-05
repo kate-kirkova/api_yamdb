@@ -21,14 +21,6 @@ class RegisterNewUserAPIView(generics.CreateAPIView):
             fail_silently=False,)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    # def perform_create(self, serializer):
-    #     user = serializer.save()
-    #     token = user.confirmation_code
-    #     send_mail(
-    #         'Confirmation code', f'Your code: {token}', 'awesome@guy.com',
-    #         [user.email],
-    #         fail_silently=False,)
-
 
 class ListCreateDestroyViewSet(mixins.CreateModelMixin,
                                mixins.ListModelMixin,
