@@ -1,14 +1,17 @@
 from django.core.mail import send_mail
-from rest_framework import filters, generics, mixins, viewsets, status
+from rest_framework import filters, generics, mixins, permissions, status, viewsets
 from rest_framework.response import Response
-from reviews.models import Category, Genre, Title
+from rest_framework_simplejwt.tokens import SlidingToken
 
+from .permissions import AdminLevelPermission, UserAccessPermission
 from .serializers import (CategorySerializer, CreateUserSerializer,
-                          GenreSerializer, TitleSerializer)
-
+                          GenreSerializer, GetJWTTokenSerializer,
+                          TitleSerializer, UserSerializer)
+from reviews.models import User, Category, Genre, Title
 
 class RegisterNewUserAPIView(generics.CreateAPIView):
     serializer_class = CreateUserSerializer
+    permission_classes = (permissions.AllowAny,)
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
@@ -20,6 +23,33 @@ class RegisterNewUserAPIView(generics.CreateAPIView):
             [user.email],
             fail_silently=False,)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CustomJWTTokenView(generics.CreateAPIView):
+    serializer_class = GetJWTTokenSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = User.objects.get(username=request.data['username'])
+        token = SlidingToken.for_user(user)
+
+        return Response({'Token': str(token)}, status.HTTP_200_OK)
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = (AdminLevelPermission,)
+    lookup_field = 'username'
+
+
+class GetPersonalInfoViewSet(mixins.UpdateModelMixin,
+                             mixins.RetrieveModelMixin,
+                             viewsets.GenericViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = (UserAccessPermission,)
 
 
 class ListCreateDestroyViewSet(mixins.CreateModelMixin,
