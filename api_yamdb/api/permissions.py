@@ -14,3 +14,12 @@ class UserAccessPermission(permissions.BasePermission):
 class AdminLevelPermission(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user.is_superuser
+
+
+class AdminLevelOrReadOnlyPermission(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.method in permissions.SAFE_METHODS
+            or request.user.is_superuser
+            or request.auth and request.user.role=='admin'
+        )

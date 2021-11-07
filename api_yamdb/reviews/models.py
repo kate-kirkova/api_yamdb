@@ -73,8 +73,8 @@ class Genre(models.Model):
 
 
 class Category(models.Model):
-    name = models.CharField('Категория', max_length=150, unique=True)
-    slug = models.SlugField(unique=True, blank=False)
+    name = models.CharField('Категория', max_length=256, unique=True)
+    slug = models.SlugField(unique=True, blank=False, max_length=50)
 
     def __str__(self) -> str:
         return self.name
