@@ -2,7 +2,7 @@ from django.urls import include, path
 
 from rest_framework.routers import SimpleRouter
 
-from .views import (GetPersonalInfoViewSet, TitleViewSet, CategoryViewSet, GenreViewSet,
+from .views import (TitleViewSet, CategoryViewSet, GenreViewSet,
                     RegisterNewUserAPIView, CustomJWTTokenView, UserViewSet)
 
 
@@ -13,7 +13,6 @@ router.register(r'titles', TitleViewSet)
 router.register(r'categories', CategoryViewSet)
 router.register(r'genres', GenreViewSet)
 router.register(r'users', UserViewSet)
-router.register(r'users/me', GetPersonalInfoViewSet)
 
 
 urlpatterns = [

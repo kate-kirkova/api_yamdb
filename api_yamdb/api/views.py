@@ -1,8 +1,9 @@
+from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from rest_framework import filters, generics, mixins, permissions, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import SlidingToken
-from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework_simplejwt.tokens import AccessToken, SlidingToken
 
 from reviews.models import User, Category, Genre, Title
 
@@ -20,9 +21,9 @@ class RegisterNewUserAPIView(generics.CreateAPIView):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        token = user.confirmation_code
+        code = user.confirmation_code
         send_mail(
-            'Confirmation code', f'Your code: {token}', 'awesome@guy.com',
+            'Confirmation code', f'Your code: {code}', 'awesome@guy.com',
             [user.email],
             fail_silently=False,)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -30,13 +31,13 @@ class RegisterNewUserAPIView(generics.CreateAPIView):
 
 class CustomJWTTokenView(generics.CreateAPIView):
     serializer_class = GetJWTTokenSerializer
+    permission_classes = (permissions.AllowAny,)
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = User.objects.get(username=request.data['username'])
         token = SlidingToken.for_user(user)
-
         return Response({'Token': str(token)}, status.HTTP_200_OK)
 
 
@@ -46,13 +47,17 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = (AdminLevelPermission,)
     lookup_field = 'username'
 
-
-class GetPersonalInfoViewSet(mixins.UpdateModelMixin,
-                             mixins.RetrieveModelMixin,
-                             viewsets.GenericViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = (UserAccessPermission,)
+    @action(methods=['get', 'patch'], detail=False)
+    def me(self, request):
+        if request.method == 'GET':
+            user = User.objects.filter(id=request.user.id)
+            serializer = self.get_serializer(user, many=True)
+        elif request.method == 'PATCH':
+            instance = request.user
+            serializer = self.get_serializer(instance, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+        return Response(serializer.data) 
 
 
 class ListCreateDestroyViewSet(mixins.CreateModelMixin,
