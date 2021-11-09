@@ -3,7 +3,7 @@ from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 
 from .views import (TitleViewSet, CategoryViewSet, GenreViewSet,
-                    RegisterNewUserAPIView, CustomJWTTokenView, UserViewSet)
+                    RegisterNewUserAPIView, CustomJWTTokenView, UserViewSet, UserDetailAPIView)
 
 
 app_name = 'api'
@@ -16,6 +16,7 @@ router.register(r'users', UserViewSet)
 
 
 urlpatterns = [
+    path('v1/users/me/', UserDetailAPIView.as_view()),
     path('v1/', include(router.urls)),
     path('v1/auth/signup/', RegisterNewUserAPIView.as_view()),
     path('v1/auth/token/', CustomJWTTokenView.as_view()),

@@ -53,12 +53,25 @@ class GetJWTTokenSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-
+    
     class Meta:
         model = User
         fields = ('username', 'email', 'first_name',
                   'last_name', 'bio', 'role')
         read_only_fields = ('role',)
+
+
+class UserWithAdminAccessSerializer(serializers.ModelSerializer):
+    role = serializers.CharField()
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name',
+                  'last_name', 'bio', 'role')
+        # read_only_fields = ('role',)
+
+    def get_gender(self,obj):
+        return obj.get_role_display()
 
 
 class CategorySerializer(serializers.ModelSerializer):

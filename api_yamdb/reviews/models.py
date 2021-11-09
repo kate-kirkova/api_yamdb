@@ -6,18 +6,18 @@ from django.core.validators import MaxValueValidator
 from django.db import models
 
 ROLES = (
-    ('ADMIN', 'Admin'),
-    ('MODERATOR', 'Moderator'),
-    ('USER', 'User')
+    ('admin', 'admin'),
+    ('moderator', 'moderator'),
+    ('user', 'user')
 )
 
 
 class User(AbstractUser):
     bio = models.TextField('About user', blank=True, null=True)
     role = models.CharField(
-        'User role', choices=ROLES, default='User', max_length=10)
+        'User role', choices=ROLES, default='user', max_length=10)
     confirmation_code: str = models.CharField(
-        max_length=12, default=uuid.uuid4)
+        max_length=36, default=uuid.uuid4)
 
     def __str__(self) -> str:
         return self.username

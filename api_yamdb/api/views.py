@@ -1,9 +1,8 @@
-from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from rest_framework import filters, generics, mixins, permissions, status, viewsets
-from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import AccessToken, SlidingToken
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import SlidingToken
 
 from reviews.models import User, Category, Genre, Title
 
@@ -11,7 +10,8 @@ from .permissions import (AdminLevelPermission, UserAccessPermission,
                           AdminLevelOrReadOnlyPermission)
 from .serializers import (CategorySerializer, CreateUserSerializer,
                           GenreSerializer, GetJWTTokenSerializer,
-                          TitleSerializer, UserSerializer)
+                          TitleSerializer, UserSerializer, UserWithAdminAccessSerializer)
+
 
 class RegisterNewUserAPIView(generics.CreateAPIView):
     serializer_class = CreateUserSerializer
@@ -43,21 +43,44 @@ class CustomJWTTokenView(generics.CreateAPIView):
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = (AdminLevelPermission,)
+    permission_classes = (AdminLevelPermission, permissions.IsAuthenticated)
     lookup_field = 'username'
 
-    @action(methods=['get', 'patch'], detail=False)
-    def me(self, request):
-        if request.method == 'GET':
-            user = User.objects.filter(id=request.user.id)
-            serializer = self.get_serializer(user, many=True)
-        elif request.method == 'PATCH':
-            instance = request.user
-            serializer = self.get_serializer(instance, data=request.data, partial=True)
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return CreateUserSerializer
+        else:
+            return UserSerializer
+
+
+class UserDetailAPIView(APIView):
+    def get(self, request):
+        user = self.get_queryset()
+        if not user:
+            return Response(status.HTTP_401_UNAUTHORIZED)
+        serializer = UserSerializer(user, many=False)
+        return Response(serializer.data)
+
+    def patch(self, request):
+        instance = request.user
+        if instance.role == 'admin':
+            serializer = UserWithAdminAccessSerializer(instance, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
-        return Response(serializer.data) 
+        else:
+            serializer = UserSerializer(instance, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    def delete(self, request):
+        user = self.get_queryset()
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def get_queryset(self):
+        return User.objects.get(username=self.request.user)
+    
 
 
 class ListCreateDestroyViewSet(mixins.CreateModelMixin,
