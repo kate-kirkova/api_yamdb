@@ -1,6 +1,5 @@
-from rest_framework import serializers, status
-from rest_framework.response import Response
-from reviews.models import Category, Genre, Title, User
+from rest_framework import serializers
+from reviews.models import Category, Genre, Title, User, ROLES
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -61,17 +60,47 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ('role',)
 
 
-class UserWithAdminAccessSerializer(serializers.ModelSerializer):
-    role = serializers.CharField()
+class AdminCreateUserSerializer(CreateUserSerializer):
+    # по какой-то причине сериализатор дает возможость создать пользователя с пустым email
+    role = serializers.ChoiceField(choices=ROLES)
+
+    class Meta(CreateUserSerializer.Meta):
+        fields = CreateUserSerializer.Meta.fields + ('role',)
+
+
+class AdminCreateUserFullSerializer(CreateUserSerializer):
+    role = serializers.ChoiceField(choices=ROLES, default='user', required=False)
+    email = serializers.EmailField(required=True)
+
+    def validate_email(self, value):
+        '''Checks if the email is already in the database'''
+        lower_email = value.lower()
+        if User.objects.filter(email__iexact=lower_email).exists():
+            raise serializers.ValidationError('This email address is already in use')
+        return lower_email
+    
+    def validate_username(self, value):
+        ''' Assures that username is not equal to 'me' '''
+        lower_username = value.lower()
+        if lower_username == 'me':
+            raise serializers.ValidationError('Please use a different username')
+        return lower_username
+    
+    def create(self, validated_data):
+        return User.objects.create(**validated_data)
 
     class Meta:
         model = User
         fields = ('username', 'email', 'first_name',
                   'last_name', 'bio', 'role')
-        # read_only_fields = ('role',)
 
-    def get_gender(self,obj):
-        return obj.get_role_display()
+class UserWithAdminAccessSerializer(serializers.ModelSerializer):
+    role = serializers.ChoiceField(choices=ROLES)
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name',
+                  'last_name', 'bio', 'role')
 
 
 class CategorySerializer(serializers.ModelSerializer):

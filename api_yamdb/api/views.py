@@ -8,7 +8,7 @@ from reviews.models import User, Category, Genre, Title
 
 from .permissions import (AdminLevelPermission, UserAccessPermission,
                           AdminLevelOrReadOnlyPermission)
-from .serializers import (CategorySerializer, CreateUserSerializer,
+from .serializers import (AdminCreateUserFullSerializer, AdminCreateUserSerializer, CategorySerializer, CreateUserSerializer,
                           GenreSerializer, GetJWTTokenSerializer,
                           TitleSerializer, UserSerializer, UserWithAdminAccessSerializer)
 
@@ -47,23 +47,25 @@ class UserViewSet(viewsets.ModelViewSet):
     lookup_field = 'username'
 
     def get_serializer_class(self):
-        if self.action == 'create':
-            return CreateUserSerializer
+        if self.request.method == 'POST':
+            return AdminCreateUserFullSerializer
         else:
-            return UserSerializer
+            return UserWithAdminAccessSerializer
 
 
 class UserDetailAPIView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
     def get(self, request):
-        user = self.get_queryset()
-        if not user:
-            return Response(status.HTTP_401_UNAUTHORIZED)
-        serializer = UserSerializer(user, many=False)
-        return Response(serializer.data)
+        if self.get_queryset():
+            user = self.get_queryset()
+            serializer = UserSerializer(user, many=False)
+            return Response(serializer.data)
+        return Response(status.HTTP_404_NOT_FOUND)
 
     def patch(self, request):
         instance = request.user
-        if instance.role == 'admin':
+        if instance.is_superuser:
             serializer = UserWithAdminAccessSerializer(instance, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
