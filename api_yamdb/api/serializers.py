@@ -60,14 +60,6 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ('role',)
 
 
-class AdminCreateUserSerializer(CreateUserSerializer):
-    # по какой-то причине сериализатор дает возможость создать пользователя с пустым email
-    role = serializers.ChoiceField(choices=ROLES)
-
-    class Meta(CreateUserSerializer.Meta):
-        fields = CreateUserSerializer.Meta.fields + ('role',)
-
-
 class AdminCreateUserFullSerializer(CreateUserSerializer):
     role = serializers.ChoiceField(choices=ROLES, default='user', required=False)
     email = serializers.EmailField(required=True)

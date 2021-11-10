@@ -6,9 +6,8 @@ from rest_framework_simplejwt.tokens import SlidingToken
 
 from reviews.models import User, Category, Genre, Title
 
-from .permissions import (AdminLevelPermission, UserAccessPermission,
-                          AdminLevelOrReadOnlyPermission)
-from .serializers import (AdminCreateUserFullSerializer, AdminCreateUserSerializer, CategorySerializer, CreateUserSerializer,
+from .permissions import (AdminLevelPermission, AdminLevelOrReadOnlyPermission)
+from .serializers import (AdminCreateUserFullSerializer, CategorySerializer, CreateUserSerializer,
                           GenreSerializer, GetJWTTokenSerializer,
                           TitleSerializer, UserSerializer, UserWithAdminAccessSerializer)
 
