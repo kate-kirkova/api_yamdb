@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import filters, generics, mixins, permissions, status, viewsets
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import SlidingToken
+from django_filters.rest_framework import DjangoFilterBackend
 
 from reviews.models import User, Category, Genre, Title, Review
 
@@ -73,9 +74,10 @@ class TitleViewSet(viewsets.ModelViewSet):
     queryset = Title.objects.annotate(
         rating=Avg('reviews__rating')
     ).order_by('-id')
-    serializer_class = TitleSerializer
+    filter_backends = (DjangoFilterBackend,)
     permission_classes = (AdminLevelOrReadOnlyPermission,)
     filterset_class = TitleFilter
+    filterset_fields = ['category', 'genre', 'year', 'name']
 
     def get_serializer_class(self):
         if self.request.method in ['GET']:
@@ -84,7 +86,7 @@ class TitleViewSet(viewsets.ModelViewSet):
             return TitleCreateSerializer
 
 
-class CategoryViewSet(ListCreateDestroyViewSet):
+class CategoryViewSet(ListCreateDestroyViewSet, mixins.RetrieveModelMixin):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     lookup_field = 'slug'
