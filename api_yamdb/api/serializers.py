@@ -1,6 +1,6 @@
 from rest_framework import serializers, status
 from rest_framework.response import Response
-from reviews.models import Category, Genre, Title, User
+from reviews.models import Category, Genre, Title, User, Review, Comment
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -61,6 +61,14 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ('role',)
 
 
+class UserNotInfoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name',
+                  'last_name', 'bio', 'role')
+        optional_fields = ('first_name', 'last_name', 'bio', 'role')
+
+
 class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -78,6 +86,26 @@ class GenreSerializer(serializers.ModelSerializer):
 class TitleSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     genre = GenreSerializer(many=True, read_only=True)
+    rating = serializers.FloatField(read_only=True)
+
+    class Meta:
+        model = Title
+        fields = (
+            'id', 'name', 'year', 'rating',
+            'description', 'genre', 'category'
+        )
+
+
+class TitleCreateSerializer(serializers.ModelSerializer):
+    category = serializers.SlugRelatedField(
+        slug_field='slug',
+        queryset=Category.objects.all()
+    )
+    genre = serializers.SlugRelatedField(
+        slug_field='slug',
+        queryset=Genre.objects.all(),
+        many=True
+    )
 
     class Meta:
         model = Title
@@ -85,3 +113,36 @@ class TitleSerializer(serializers.ModelSerializer):
             'id', 'name', 'year',
             'description', 'genre', 'category'
         )
+
+
+class ReviewSerializer(serializers.ModelSerializer):
+    author = serializers.SlugRelatedField(
+        slug_field='username',
+        read_only=True,
+    )
+
+    def validate(self, data):
+        if self.context['request'].method != 'POST':
+            return data
+        title = self.context['view'].kwargs['title_id']
+        author = self.context['request'].user
+        if author.reviews.filter(title=title).exists():
+            raise serializers.ValidationError(
+                'You can not leave more than 1 review.'
+            )
+        return data
+
+    class Meta:
+        exclude = ('title',)
+        model = Review
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    author = serializers.SlugRelatedField(
+        slug_field='username',
+        read_only=True
+    )
+
+    class Meta:
+        exclude = ('review',)
+        model = Comment
