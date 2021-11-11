@@ -6,21 +6,50 @@ from django.core.validators import MaxValueValidator
 from django.db import models
 
 ROLES = (
-    ('ADMIN', 'Admin'),
-    ('MODERATOR', 'Moderator'),
-    ('USER', 'User')
+    ('moderator', 'moderator'),
+    ('user', 'user'),
+    ('admin', 'admin'),
 )
 
 
 class User(AbstractUser):
     bio = models.TextField('About user', blank=True, null=True)
     role = models.CharField(
-        'User role', choices=ROLES, default='User', max_length=10)
+        'User role', choices=ROLES, default='user', max_length=10)
     confirmation_code: str = models.CharField(
         max_length=12, default=uuid.uuid4)
 
     def __str__(self) -> str:
         return self.username
+
+
+class Genre(models.Model):
+    name = models.CharField('Жанр', max_length=150, unique=True)
+    slug = models.SlugField(unique=True, blank=False)
+
+    class Meta:
+        ordering = ('id',)
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class Title(models.Model):
+    name = models.CharField('Название', max_length=150, blank=False)
+    year = models.PositiveIntegerField(
+        'Год выхода', validators=[MaxValueValidator(dt.now().year)],
+        blank=False,)
+    description = models.TextField('Описание', blank=True)
+    genre = models.ManyToManyField(
+        Genre, 'Genre', blank=False)
+    category = models.ForeignKey(
+        'Category', blank=False, null=True, on_delete=models.SET_NULL)
+
+    class Meta:
+        ordering = ('id',)
+
+    def __str__(self) -> str:
+        return self.name
 
 
 class Review(models.Model):
@@ -33,20 +62,13 @@ class Review(models.Model):
     rating = models.PositiveIntegerField(
         default=0, validators=[MaxValueValidator(10)])
 
-
-class Title(models.Model):
-    name = models.CharField('Название', max_length=150, blank=False)
-    year = models.PositiveIntegerField(
-        'Год выхода', validators=[MaxValueValidator(dt.now().year)],
-        blank=False,)
-    description = models.TextField('Описание', blank=True)
-    genre = models.ManyToManyField(
-        'Genre', blank=False)
-    category = models.ForeignKey(
-        'Category', blank=False, null=True, on_delete=models.SET_NULL)
-
-    def __str__(self) -> str:
-        return self.name
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=('title', 'author'),
+                name='unique_review'
+            ),
+        ]
 
 
 class Comment(models.Model):
@@ -64,17 +86,12 @@ class Comment(models.Model):
         return self.text[:30]
 
 
-class Genre(models.Model):
-    name = models.CharField('Жанр', max_length=150, unique=True)
-    slug = models.SlugField(unique=True, blank=False)
-
-    def __str__(self) -> str:
-        return self.name
-
-
 class Category(models.Model):
     name = models.CharField('Категория', max_length=256, unique=True)
     slug = models.SlugField(unique=True, blank=False, max_length=50)
+
+    class Meta:
+        ordering = ('id',)
 
     def __str__(self) -> str:
         return self.name
