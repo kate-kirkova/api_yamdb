@@ -18,6 +18,7 @@ from .serializers import (CategorySerializer, CommentSerializer,
                           TitleCreateSerializer, TitleSerializer,
                           UserNotInfoSerializer, UserSerializer,
                           UserWithAdminAccessSerializer)
+from .utils import ListCreateDestroyViewSet
 
 
 class RegisterNewUserAPIView(generics.CreateAPIView):
@@ -80,13 +81,6 @@ class UserDetailAPIView(APIView):
 
     def get_queryset(self):
         return User.objects.get(username=self.request.user)
-
-
-class ListCreateDestroyViewSet(viewsets.GenericViewSet,
-                               mixins.CreateModelMixin,
-                               mixins.ListModelMixin,
-                               mixins.DestroyModelMixin):
-    pass
 
 
 class TitleViewSet(viewsets.ModelViewSet):
