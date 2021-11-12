@@ -1,24 +1,23 @@
 from django.core.mail import send_mail
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
-
-from rest_framework import filters, generics, mixins, permissions, status, viewsets
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import (filters, generics, mixins, permissions, status,
+                            viewsets)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import SlidingToken
-from django_filters.rest_framework import DjangoFilterBackend
 
-from reviews.models import User, Category, Genre, Title, Review
-
-from .permissions import (AdminLevelPermission,
-                          AdminLevelOrReadOnlyPermission,
-                          IsOwnerAdminModeratorOrReadOnly)
-from .serializers import (CategorySerializer, CreateUserSerializer,
-                          GenreSerializer, GetJWTTokenSerializer,
-                          TitleSerializer, UserSerializer, UserNotInfoSerializer,
-                          TitleCreateSerializer, ReviewSerializer,
-                          CommentSerializer, UserWithAdminAccessSerializer)
+from reviews.models import Category, Genre, Review, Title, User
 from .filters import TitleFilter
+from .permissions import (AdminLevelOrReadOnlyPermission, AdminLevelPermission,
+                          IsOwnerAdminModeratorOrReadOnly)
+from .serializers import (CategorySerializer, CommentSerializer,
+                          CreateUserSerializer, GenreSerializer,
+                          GetJWTTokenSerializer, ReviewSerializer,
+                          TitleCreateSerializer, TitleSerializer,
+                          UserNotInfoSerializer, UserSerializer,
+                          UserWithAdminAccessSerializer)
 
 
 class RegisterNewUserAPIView(generics.CreateAPIView):
@@ -56,7 +55,6 @@ class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserNotInfoSerializer
     permission_classes = (AdminLevelPermission,)
     lookup_field = 'username'
-
 
 class UserDetailAPIView(APIView):
     permission_classes = (permissions.IsAuthenticated,)

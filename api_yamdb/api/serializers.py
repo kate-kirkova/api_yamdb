@@ -1,7 +1,9 @@
 from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
-from reviews.models import Category, Genre, Title, User, Review, Comment, ROLES
+from rest_framework.validators import UniqueValidator
 
+
+from reviews.models import Category, Genre, Title, User, Review, Comment, ROLES
 from .utils import CustomException
 
 
@@ -42,7 +44,9 @@ class GetJWTTokenSerializer(serializers.ModelSerializer):
 
     def validate_username(self, value):
         if not User.objects.filter(username=value).exists():
-            raise CustomException(status_code=status.HTTP_404_NOT_FOUND, message='Wrong credentials')
+            raise CustomException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                message='Wrong credentials')
 
     def validate_confirmation_code(self, value):
         if not User.objects.filter(confirmation_code=value).exists():
@@ -63,6 +67,13 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserNotInfoSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(
+        required=True,
+        validators=[UniqueValidator(queryset=User.objects.all())])
+    email = serializers.EmailField(
+        required=True,
+        validators=[UniqueValidator(queryset=User.objects.all())])
+
     class Meta:
         model = User
         fields = ('username', 'email', 'first_name',
@@ -151,6 +162,36 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class UserWithAdminAccessSerializer(serializers.ModelSerializer):
     role = serializers.ChoiceField(choices=ROLES)
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name',
+                  'last_name', 'bio', 'role')
+
+
+class AdminCreateUserSerializer(CreateUserSerializer):
+    role = serializers.ChoiceField(
+        choices=ROLES, default='user', required=False)
+    email = serializers.EmailField(required=True)
+
+    def validate_email(self, value):
+        '''Checks if the email is already in the database'''
+        lower_email = value.lower()
+        if User.objects.filter(email__iexact=lower_email).exists():
+            raise serializers.ValidationError(
+                'This email address is already in use')
+        return lower_email
+
+    def validate_username(self, value):
+        ''' Assures that username is not equal to 'me' '''
+        lower_username = value.lower()
+        if lower_username == 'me':
+            raise serializers.ValidationError(
+                'Please use a different username')
+        return lower_username
+
+    def create(self, validated_data):
+        return User.objects.create(**validated_data)
 
     class Meta:
         model = User
