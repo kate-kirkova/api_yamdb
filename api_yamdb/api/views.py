@@ -4,19 +4,20 @@ from django.shortcuts import get_object_or_404
 
 from rest_framework import filters, generics, mixins, permissions, status, viewsets
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import SlidingToken
 from django_filters.rest_framework import DjangoFilterBackend
 
 from reviews.models import User, Category, Genre, Title, Review
 
-from .permissions import (AdminLevelPermission, UserAccessPermission,
+from .permissions import (AdminLevelPermission,
                           AdminLevelOrReadOnlyPermission,
                           IsOwnerAdminModeratorOrReadOnly)
 from .serializers import (CategorySerializer, CreateUserSerializer,
                           GenreSerializer, GetJWTTokenSerializer,
                           TitleSerializer, UserSerializer, UserNotInfoSerializer,
                           TitleCreateSerializer, ReviewSerializer,
-                          CommentSerializer)
+                          CommentSerializer, UserWithAdminAccessSerializer)
 from .filters import TitleFilter
 
 
@@ -55,12 +56,30 @@ class UserViewSet(viewsets.ModelViewSet):
     lookup_field = 'username'
 
 
-class GetPersonalInfoViewSet(mixins.UpdateModelMixin,
-                             mixins.RetrieveModelMixin,
-                             viewsets.GenericViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
-    permission_classes = (UserAccessPermission,)
+class UserDetailAPIView(APIView):
+    permission_classes = (permissions.IsAuthenticated,)
+
+    def get(self, request):
+        if self.get_queryset():
+            user = self.get_queryset()
+            serializer = UserSerializer(user, many=False)
+            return Response(serializer.data)
+        return Response(status.HTTP_404_NOT_FOUND)
+
+    def patch(self, request):
+        instance = request.user
+        if instance.is_superuser:
+            serializer = UserWithAdminAccessSerializer(instance, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+        else:
+            serializer = UserSerializer(instance, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def get_queryset(self):
+        return User.objects.get(username=self.request.user)
 
 
 class ListCreateDestroyViewSet(viewsets.GenericViewSet,

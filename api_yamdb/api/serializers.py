@@ -1,6 +1,7 @@
 from rest_framework import serializers, status
-from rest_framework.response import Response
-from reviews.models import Category, Genre, Title, User, Review, Comment
+from reviews.models import Category, Genre, Title, User, Review, Comment, ROLES
+
+from .utils import CustomException
 
 
 class CreateUserSerializer(serializers.ModelSerializer):
@@ -10,16 +11,17 @@ class CreateUserSerializer(serializers.ModelSerializer):
         '''Checks if the email is already in the database'''
         lower_email = value.lower()
         if User.objects.filter(email__iexact=lower_email).exists():
-            raise serializers.ValidationError('This email address is already in use')
+            raise serializers.ValidationError(
+                'This email address is already in use')
         return lower_email
-    
+
     def validate_username(self, value):
         ''' Assures that username is not equal to 'me' '''
         lower_username = value.lower()
         if lower_username == 'me':
-            raise serializers.ValidationError('Please use a different username')
+            raise serializers.ValidationError(
+                'Please use a different username')
         return lower_username
-
 
     def create(self, validated_data):
         user = User.objects.create_user(
@@ -39,17 +41,18 @@ class GetJWTTokenSerializer(serializers.ModelSerializer):
 
     def validate_username(self, value):
         # необходимо вернуть 404 статус если юзера не существует
-        if not User.objects.filter(username=value).exists():
-            raise serializers.ValidationError(detail='Username not found')
+        if self.username == '':
+            raise CustomException(status_code=status.HTTP_400_BAD_REQUEST, message='Username field required')
+        elif not User.objects.filter(username=value).exists():
+            raise CustomException(status_code=status.HTTP_404_NOT_FOUND, message='Wrong credentials')
 
     def validate_confirmation_code(self, value):
         if not User.objects.filter(confirmation_code=value).exists():
-            raise serializers.ValidationError('Invalid code')
+            raise CustomException(status_code=status.HTTP_404_NOT_FOUND, message='Wrong credentials')
 
     class Meta:
         model = User
         fields = ('username', 'confirmation_code')
-
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -146,3 +149,12 @@ class CommentSerializer(serializers.ModelSerializer):
     class Meta:
         exclude = ('review',)
         model = Comment
+
+
+class UserWithAdminAccessSerializer(serializers.ModelSerializer):
+    role = serializers.ChoiceField(choices=ROLES)
+
+    class Meta:
+        model = User
+        fields = ('username', 'email', 'first_name',
+                  'last_name', 'bio', 'role')

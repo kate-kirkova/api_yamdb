@@ -16,8 +16,8 @@ class User(AbstractUser):
     bio = models.TextField('About user', blank=True, null=True)
     role = models.CharField(
         'User role', choices=ROLES, default='user', max_length=10)
-    confirmation_code: str = models.CharField(
-        max_length=12, default=uuid.uuid4)
+    confirmation_code = models.CharField(
+        max_length=36, default=uuid.uuid4)
 
     def __str__(self) -> str:
         return self.username
