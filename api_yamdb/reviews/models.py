@@ -95,8 +95,3 @@ class Category(models.Model):
 
     def __str__(self) -> str:
         return self.name
-
-
-# class GenreTitle(models.Model):
-#     genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
-#     title = models.ForeignKey(Title, on_delete=models.CASCADE)

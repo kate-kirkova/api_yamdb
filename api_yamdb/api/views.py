@@ -3,7 +3,7 @@ from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import (filters, generics, mixins, permissions, status,
-                            viewsets)
+                            viewsets, exceptions)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import SlidingToken
@@ -18,7 +18,6 @@ from .serializers import (CategorySerializer, CommentSerializer,
                           TitleCreateSerializer, TitleSerializer,
                           UserNotInfoSerializer, UserSerializer,
                           UserWithAdminAccessSerializer)
-from .utils import ListCreateDestroyViewSet
 
 
 class RegisterNewUserAPIView(generics.CreateAPIView):
@@ -42,12 +41,11 @@ class CustomJWTTokenView(generics.CreateAPIView):
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
-        if 'username' not in request.data:
-            return Response('Provide username', status=status.HTTP_400_BAD_REQUEST)
         serializer.is_valid(raise_exception=True)
-        user = User.objects.get(username=request.data['username'])
+        user = get_object_or_404(User, username=request.data['username'])
+        if user.confirmation_code != request.data['confirmation_code']:
+            raise exceptions.ValidationError()
         token = SlidingToken.for_user(user)
-
         return Response({'Token': str(token)}, status.HTTP_200_OK)
 
 
@@ -97,6 +95,13 @@ class TitleViewSet(viewsets.ModelViewSet):
             return TitleSerializer
         else:
             return TitleCreateSerializer
+
+
+class ListCreateDestroyViewSet(viewsets.GenericViewSet,
+                               mixins.CreateModelMixin,
+                               mixins.ListModelMixin,
+                               mixins.DestroyModelMixin):
+    pass
 
 
 class CategoryViewSet(ListCreateDestroyViewSet, mixins.RetrieveModelMixin):
