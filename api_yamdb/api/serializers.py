@@ -1,4 +1,5 @@
 from rest_framework import serializers, status
+from rest_framework.exceptions import ValidationError
 from reviews.models import Category, Genre, Title, User, Review, Comment, ROLES
 
 from .utils import CustomException
@@ -40,15 +41,12 @@ class GetJWTTokenSerializer(serializers.ModelSerializer):
     confirmation_code = serializers.CharField(required=True)
 
     def validate_username(self, value):
-        # необходимо вернуть 404 статус если юзера не существует
-        if self.username == '':
-            raise CustomException(status_code=status.HTTP_400_BAD_REQUEST, message='Username field required')
-        elif not User.objects.filter(username=value).exists():
+        if not User.objects.filter(username=value).exists():
             raise CustomException(status_code=status.HTTP_404_NOT_FOUND, message='Wrong credentials')
 
     def validate_confirmation_code(self, value):
         if not User.objects.filter(confirmation_code=value).exists():
-            raise CustomException(status_code=status.HTTP_404_NOT_FOUND, message='Wrong credentials')
+            raise ValidationError('Your code is invalid')
 
     class Meta:
         model = User

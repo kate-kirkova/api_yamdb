@@ -42,6 +42,8 @@ class CustomJWTTokenView(generics.CreateAPIView):
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
+        if 'username' not in request.data:
+            return Response('Provide username', status=status.HTTP_400_BAD_REQUEST)
         serializer.is_valid(raise_exception=True)
         user = User.objects.get(username=request.data['username'])
         token = SlidingToken.for_user(user)
