@@ -103,11 +103,11 @@ class Test02CategoryAPI:
         )
         response = admin_client.get('/api/v1/categories/books/')
         assert response.status_code == 404, (
-            'Проверьте, что при GET запросе `/api/v1/categories/{slug}/` возвращаете статус 405'
+            'Проверьте, что при GET запросе `/api/v1/categories/{slug}/` возвращаете статус 404'
         )
         response = admin_client.patch('/api/v1/categories/books/')
-        assert response.status_code == 405, (
-            'Проверьте, что при PATCH запросе `/api/v1/categories/{slug}/` возвращаете статус 405'
+        assert response.status_code == 404, (
+            'Проверьте, что при PATCH запросе `/api/v1/categories/{slug}/` возвращаете статус 404'
         )
 
     def check_permissions(self, user, user_name, categories):

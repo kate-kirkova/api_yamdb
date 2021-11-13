@@ -107,7 +107,7 @@ class ListCreateDestroyViewSet(viewsets.GenericViewSet,
     pass
 
 
-class CategoryViewSet(ListCreateDestroyViewSet, mixins.RetrieveModelMixin):
+class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     lookup_field = 'slug'
@@ -115,6 +115,9 @@ class CategoryViewSet(ListCreateDestroyViewSet, mixins.RetrieveModelMixin):
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     permission_classes = (AdminLevelOrReadOnlyPermission,)
+
+    def update(self, request, *args, **kwargs):
+        return Response(status=status.HTTP_404_NOT_FOUND)
 
 
 class GenreViewSet(ListCreateDestroyViewSet):
