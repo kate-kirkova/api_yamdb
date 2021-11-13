@@ -59,8 +59,10 @@ class Review(models.Model):
     title = models.ForeignKey(
         'Title', on_delete=models.CASCADE, related_name='reviews',
         verbose_name='title')
-    rating = models.PositiveIntegerField(
+    text = models.TextField('Комментарий к отзыву')
+    score = models.PositiveIntegerField(
         default=0, validators=[MaxValueValidator(10)])
+    pub_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         constraints = [
