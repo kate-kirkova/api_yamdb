@@ -115,8 +115,6 @@ class ReviewSerializer(serializers.ModelSerializer):
         slug_field='username',
         read_only=True,
     )
-    # text = serializers.CharField(required=True)
-    # rating = serializers.IntegerField(required=True)
 
     def validate(self, data):
         if self.context['request'].method != 'POST':
@@ -132,11 +130,6 @@ class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Review
         fields = ('id', 'text', 'score', 'author', 'pub_date')
-        #exclude = ('title',)
-        # extra_kwargs = {
-        #     'text': {'required': True},
-        #     'rating': {'required': True}
-        # }
 
 
 class CommentSerializer(serializers.ModelSerializer):
