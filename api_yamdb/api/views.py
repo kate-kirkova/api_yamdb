@@ -55,6 +55,7 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = (AdminLevelPermission,)
     lookup_field = 'username'
 
+
 class UserDetailAPIView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
@@ -68,11 +69,13 @@ class UserDetailAPIView(APIView):
     def patch(self, request):
         instance = request.user
         if instance.is_superuser:
-            serializer = UserWithAdminAccessSerializer(instance, data=request.data, partial=True)
+            serializer = UserWithAdminAccessSerializer(
+                instance, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
         else:
-            serializer = UserSerializer(instance, data=request.data, partial=True)
+            serializer = UserSerializer(
+                instance, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
