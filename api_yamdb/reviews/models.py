@@ -25,6 +25,14 @@ class User(AbstractUser):
     confirmation_code = models.CharField(
         'Код подтверждения', max_length=36, default=uuid.uuid4)
 
+    @property
+    def is_admin(self):
+        return self.role == 'admin' or self.is_superuser
+
+    @property
+    def is_moderator(self):
+        return self.role == 'moderator' or self.is_superuser or self.is_admin
+
     def __str__(self) -> str:
         return self.username
 
