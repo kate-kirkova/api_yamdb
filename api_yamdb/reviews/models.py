@@ -24,6 +24,11 @@ class User(AbstractUser):
         'Права доступа', choices=ROLES, default='user', max_length=10)
     confirmation_code = models.CharField(
         'Код подтверждения', max_length=36, default=uuid.uuid4)
+    
+    class Meta:
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
+        ordering = ('id',)
 
     @property
     def is_admin(self):
