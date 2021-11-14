@@ -5,7 +5,6 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import (filters, generics, permissions, status,
                             viewsets, exceptions)
-from rest_framework.decorators import action, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import SlidingToken
@@ -95,8 +94,7 @@ class TitleViewSet(viewsets.ModelViewSet):
     def get_serializer_class(self):
         if self.request.method in ['GET']:
             return TitleSerializer
-        else:
-            return TitleCreateSerializer
+        return TitleCreateSerializer
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
