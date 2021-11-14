@@ -1,15 +1,18 @@
+from django.conf import settings
 from django.core.mail import send_mail
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import (filters, generics, mixins, permissions, status,
+from rest_framework import (filters, generics, permissions, status,
                             viewsets, exceptions)
+from rest_framework.decorators import action, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import SlidingToken
 
 from reviews.models import Category, Genre, Review, Title, User
 from .filters import TitleFilter
+from .mixins import ListCreateDestroyViewSet
 from .permissions import (AdminLevelOrReadOnlyPermission, AdminLevelPermission,
                           IsOwnerAdminModeratorOrReadOnly)
 from .serializers import (CategorySerializer, CommentSerializer,
@@ -30,7 +33,7 @@ class RegisterNewUserAPIView(generics.CreateAPIView):
         user = serializer.save()
         token = user.confirmation_code
         send_mail(
-            'Confirmation code', f'Your code: {token}', 'awesome@guy.com',
+            'Confirmation code', f'Your code: {token}', settings.ADMIN_EMAIL,
             [user.email],
             fail_silently=False,)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -42,8 +45,9 @@ class CustomJWTTokenView(generics.CreateAPIView):
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = get_object_or_404(User, username=request.data['username'])
-        if user.confirmation_code != request.data['confirmation_code']:
+        user = get_object_or_404(
+            User, username=serializer.validated_data['username'])
+        if user.confirmation_code != serializer.validated_data['confirmation_code']:
             raise exceptions.ValidationError()
         token = SlidingToken.for_user(user)
         return Response({'Token': str(token)}, status.HTTP_200_OK)
@@ -60,11 +64,9 @@ class UserDetailAPIView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
 
     def get(self, request):
-        if self.get_queryset():
-            user = self.get_queryset()
-            serializer = UserSerializer(user, many=False)
-            return Response(serializer.data)
-        return Response(status.HTTP_404_NOT_FOUND)
+        user = get_object_or_404(User, id=request.user.id)
+        serializer = UserSerializer(user, many=False)
+        return Response(serializer.data)
 
     def patch(self, request):
         instance = request.user
@@ -79,9 +81,6 @@ class UserDetailAPIView(APIView):
             serializer.is_valid(raise_exception=True)
             serializer.save()
         return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def get_queryset(self):
-        return User.objects.get(username=self.request.user)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
@@ -98,13 +97,6 @@ class TitleViewSet(viewsets.ModelViewSet):
             return TitleSerializer
         else:
             return TitleCreateSerializer
-
-
-class ListCreateDestroyViewSet(viewsets.GenericViewSet,
-                               mixins.CreateModelMixin,
-                               mixins.ListModelMixin,
-                               mixins.DestroyModelMixin):
-    pass
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -142,13 +134,8 @@ class ReviewViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         title_id = self.kwargs.get('title_id')
         title = get_object_or_404(Title, id=title_id)
-        if serializer.is_valid():
-            serializer.save(
-                author=self.request.user,
-                title=title
-            )
-        else:
-            raise exceptions.ValidationError()
+        serializer.is_valid(raise_exception=True)
+        serializer.save(author=self.request.user, title=title)
 
 
 class CommentViewSet(viewsets.ModelViewSet):
