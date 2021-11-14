@@ -5,8 +5,8 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import (filters, generics, permissions, status,
                             viewsets, exceptions)
+from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import SlidingToken
 
 from reviews.models import Category, Genre, Review, Title, User
@@ -58,28 +58,25 @@ class UserViewSet(viewsets.ModelViewSet):
     permission_classes = (AdminLevelPermission,)
     lookup_field = 'username'
 
-
-class UserDetailAPIView(APIView):
-    permission_classes = (permissions.IsAuthenticated,)
-
-    def get(self, request):
-        user = get_object_or_404(User, id=request.user.id)
-        serializer = UserSerializer(user, many=False)
-        return Response(serializer.data)
-
-    def patch(self, request):
-        instance = request.user
-        if instance.is_superuser:
-            serializer = UserWithAdminAccessSerializer(
-                instance, data=request.data, partial=True)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-        else:
-            serializer = UserSerializer(
-                instance, data=request.data, partial=True)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    @action(methods=['get', 'patch'],
+            detail=False, permission_classes=(permissions.IsAuthenticated,))
+    def me(self, request, *args, **kwargs):
+        user = get_object_or_404(User, username=request.user.username)
+        if request.method == 'GET':
+            serializer = UserSerializer(user, many=False)
+            return Response(serializer.data)
+        if request.method == 'PATCH':
+            if user.is_superuser:
+                serializer = UserWithAdminAccessSerializer(
+                    user, data=request.data, partial=True)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+            else:
+                serializer = UserSerializer(
+                    user, data=request.data, partial=True)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class TitleViewSet(viewsets.ModelViewSet):
