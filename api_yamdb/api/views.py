@@ -44,9 +44,10 @@ class CustomJWTTokenView(generics.CreateAPIView):
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
+        v_data = serializer.validated_data
         user = get_object_or_404(
-            User, username=serializer.validated_data['username'])
-        if user.confirmation_code != serializer.validated_data['confirmation_code']:
+            User, username=v_data['username'])
+        if user.confirmation_code != v_data['confirmation_code']:
             raise exceptions.ValidationError()
         token = SlidingToken.for_user(user)
         return Response({'Token': str(token)}, status.HTTP_200_OK)
